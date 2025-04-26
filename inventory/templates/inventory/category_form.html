@@ -1,0 +1,40 @@
+{# inventory/templates/inventory/category_form.html #}
+{% extends "inventory/base.html" %} {# Extends the base layout #}
+{% load crispy_forms_tags %} {# Loads tags required for |crispy filter #}
+
+{# Set the page title dynamically #}
+{% block title %}{% if object %}Update Category: {{ object.name }}{% else %}Add New Category{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9"> {# Controls the width of the form card #}
+        <div class="card shadow-sm">
+            <div class="card-header">
+                {# Dynamic card title #}
+                <h4 class="mb-0">{% if object %}Update Category Details{% else %}Enter New Category Details{% endif %}</h4>
+            </div>
+            <div class="card-body">
+                {# Start of the form #}
+                <form method="post" novalidate> {# Use POST; novalidate prevents default browser validation #}
+                    {% csrf_token %} {# Security token #}
+
+                    {# Render the form fields using the |crispy filter #}
+                    {{ form|crispy }}
+
+                    {# --- Form Action Buttons --- #}
+                    <div class="mt-4 pt-3 border-top d-grid gap-2 d-sm-flex justify-content-sm-end">
+                        {# Cancel Button: Always links back to the category list #}
+                        <a href="{% url 'category-list' %}" class="btn btn-outline-secondary order-sm-1 me-sm-2">
+                            <i class="bi bi-x-circle me-1"></i> Cancel
+                        </a>
+                        {# Submit Button: Text changes based on context #}
+                         <button type="submit" class="btn btn-success order-sm-2">
+                             <i class="bi bi-check-circle-fill me-1"></i> {% if object %}Update Category{% else %}Save Category{% endif %}
+                        </button>
+                    </div>
+                </form> {# End of the form #}
+            </div> {# End card-body #}
+        </div> {# End card #}
+    </div> {# End col #}
+</div> {# End row #}
+{% endblock %}

@@ -1,0 +1,71 @@
+{# inventory/templates/inventory/category_list.html #}
+{% extends "inventory/base.html" %} {# Extends the base layout #}
+
+{% block title %}Product Categories{% endblock %}
+
+{% block page_actions %}
+ {# Show 'Add New' button only to staff members #}
+ {% if user.is_staff %}
+ <a href="{% url 'category-add' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle-fill me-1"></i> Add New Category
+</a>
+ {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Category Listing</h5>
+    </div>
+    <div class="card-body p-0"> {# Remove padding for table alignment #}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0"> {# mb-0 removes bottom margin inside card #}
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Category Name</th>
+                        <th scope="col">Description</th>
+                         {% if user.is_staff %} {# Actions column only for staff #}
+                         <th scope="col" class="text-center">Actions</th>
+                         {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {# Loop through the category list (uses object_list from ListView by default) #}
+                    {% for category in object_list %}
+                        <tr class="align-middle">
+                            <td>{{ category.name }}</td>
+                            <td>{{ category.description|default:"-"|truncatewords:20 }}</td> {# Show placeholder and truncate long descriptions #}
+
+                             {% if user.is_staff %} {# Action buttons only for staff #}
+                            <td class="text-center">
+                                <a href="{% url 'category-edit' category.pk %}" class="btn btn-sm btn-outline-warning me-1" title="Edit Category">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                                <a href="{% url 'category-delete' category.pk %}" class="btn btn-sm btn-outline-danger" title="Delete Category">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                            </td>
+                             {% endif %}
+                        </tr>
+                    {% empty %}
+                        {# Message if no categories exist #}
+                        <tr>
+                             {# Adjust colspan based on whether Actions column is visible #}
+                            <td colspan="{% if user.is_staff %}3{% else %}2{% endif %}" class="text-center text-muted p-4">
+                                No categories have been created yet. {% if user.is_staff %}<a href="{% url 'category-add' %}">Add one?</a>{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div> {# End table-responsive #}
+    </div> {# End card-body #}
+</div> {# End Card #}
+
+{# Include pagination controls if pagination is enabled in the view #}
+{% if is_paginated %}
+    {% include "inventory/_pagination.html" %}
+{% endif %}
+
+{% endblock %}

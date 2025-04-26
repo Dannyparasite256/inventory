@@ -1,0 +1,122 @@
+{# inventory/templates/inventory/product_list.html #}
+{% extends "inventory/base.html" %}
+{% load crispy_forms_tags %} {# Load crispy tags for the filter form #}
+
+{% block title %}Products{% endblock %}
+
+{% load humanize %}
+
+{% block page_actions %}
+ {% if user.is_staff %} {# Only staff can add products #}
+ <a href="{% url 'product-add' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle-fill me-1"></i> Add New Product
+</a>
+ {% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# ---------------- Filter Form Section ---------------- #}
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-center"> {# Use GET method for filtering #}
+            {# Render the filter form using crispy tags for Bootstrap styling #}
+            {{ filter_form|crispy }}
+
+            {# Action buttons for the filter form #}
+            <div class="col-12 col-md-auto pt-2"> {# Adjust column for button alignment #}
+                <button type="submit" class="btn btn-sm btn-info me-2 mb-3">
+                    <i class="bi bi-search me-1"></i> Filter
+                </button>
+                 <a href="{% url 'product-list' %}" class="btn btn-sm btn-secondary mb-3"> {# Link to clear filters #}
+                    <i class="bi bi-x-lg me-1"></i> Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ---------------- Product Table Section ---------------- #}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Product Listing</h5>
+    </div>
+    <div class="card-body p-0"> {# Remove padding to make table flush #}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">SKU</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Supplier</th>
+                        <th scope="col" class="text-end">Quantity</th>
+                        <th scope="col" class="text-end">Selling Price</th>
+                        <th scope="col" class="text-end">Reorder Lvl</th>
+                        <th scope="col" class="text-center">Status</th>
+                        <th scope="col" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# Loop through the product list passed from the view (use object_list if using generic ListView directly) #}
+                    {% for product in products %}
+                        {# Highlight row if stock is low #}
+                        <tr class="align-middle {% if product.is_below_reorder_level %}table-danger{% endif %}">
+                            {# Link product name to its detail page #}
+                            <td><a href="{{ product.get_absolute_url }}">{{ product.name }}</a></td>
+                            <td>{{ product.sku|default:"N/A" }}</td>
+                            <td>{{ product.category.name|default:"-" }}</td>
+                            <td>{{ product.supplier.name|default:"-" }}</td>
+                            <td class="text-end fw-bold">{{ product.quantity }}</td>
+                            <td class="text-end">Ush {{ product.selling_price|floatformat:2| intcomma }}</td>
+                            <td class="text-end">{{ product.reorder_level }}</td>
+                             <td class="text-center">
+                                {# Show status badge based on reorder level #}
+                                {% if product.is_below_reorder_level %}
+                                    <span class="badge bg-danger" title="Stock is at or below reorder level">Low Stock</span>
+                                {% else %}
+                                     <span class="badge bg-success" title="Stock is above reorder level">In Stock</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {# Action buttons - View is always visible #}
+                                <a href="{{ product.get_absolute_url }}" class="btn btn-sm btn-outline-info me-1" title="View Details">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
+                                {# Edit and Delete only for staff #}
+                                {% if user.is_staff %}
+                                <a href="{% url 'product-edit' product.pk %}" class="btn btn-sm btn-outline-warning me-1" title="Edit Product">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                                <a href="{% url 'product-delete' product.pk %}" class="btn btn-sm btn-outline-danger" title="Delete Product">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        {# Message shown if no products match the filter or exist #}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted p-4">
+                                {% if request.GET %}
+                                    No products found matching your filter criteria. <a href="{% url 'product-list' %}">Clear filters?</a>
+                                {% else %}
+                                    No products have been added yet. {% if user.is_staff %}<a href="{% url 'product-add' %}">Add one?</a>{% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div> {# End table-responsive #}
+    </div> {# End card-body #}
+</div> {# End Card #}
+
+
+{# ---------------- Pagination Section ---------------- #}
+{# Include the reusable pagination template if pagination is enabled #}
+{% if is_paginated %}
+    {% include "inventory/_pagination.html" %}
+{% endif %}
+
+{% endblock %}

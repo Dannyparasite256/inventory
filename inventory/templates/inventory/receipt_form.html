@@ -1,0 +1,5 @@
+{% extends "inventory/_form_base.html" %}
+
+{% block title %}{% if object %}Update Receipt{% else %}Create Receipt{% endif %}{% endblock %}
+
+{% block cancel_url %}{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'receipt-list' %}{% endif %}{% endblock %}

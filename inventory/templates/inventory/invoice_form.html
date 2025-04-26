@@ -1,0 +1,39 @@
+{# inventory/templates/inventory/invoice_form.html #}
+{% extends "inventory/_form_base.html" %} {# Extends the reusable form base #}
+
+{# --- Override Blocks from _form_base.html --- #}
+
+{# Set the browser tab title #}
+{% block form_title %}
+    {% if object %}Update Invoice: {{ object.invoice_number }}{% else %}Create New Invoice{% endif %}
+{% endblock %}
+
+{# Set the title inside the card header #}
+{% block form_card_title %}
+    {% if object %}Update Invoice Details{% else %}Create New Invoice{% endif %}
+{% endblock %}
+
+{# Optional: Customize the title above the formset items #}
+{% block formset_title %}Invoice Items{% endblock %}
+
+{# Optional: Customize the label on the 'Add' button for formset items #}
+{% block add_button_label %}Invoice Line{% endblock %}
+
+{# Define the URL for the Cancel button #}
+{% block cancel_url %}
+    {% if object %}
+        {{ object.get_absolute_url }} {# Go back to the detail view if editing #}
+    {% else %}
+        {% url 'invoice-list' %} {# Go back to the list view if creating #}
+    {% endif %}
+{% endblock %}
+
+{# Customize the label on the Save/Submit button #}
+{% block save_button_label %}
+    {% if object %}Update Invoice{% else %}Save Invoice{% endif %}
+{% endblock %}
+
+{# --- No need to override {% block content %} as _form_base.html handles form/formset rendering --- #}
+
+{# --- No need to override {% block extra_scripts %} unless adding JS specific to *this* form --- #}
+{# The formset JS is already included in _form_base.html #}

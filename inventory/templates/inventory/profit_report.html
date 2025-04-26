@@ -1,0 +1,140 @@
+{# inventory/templates/inventory/profit_report.html #}
+{% extends "inventory/base.html" %}
+{% load crispy_forms_tags %}
+
+{% load humanize %}
+
+{% block title %}Profit Report{% endblock %}
+
+{% block page_actions %}
+ {# No specific actions usually needed here, maybe a print button? #}
+ {% if results_available %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-printer me-1"></i> Print Report
+    </button>
+ {% endif %}
+{% endblock %}
+
+
+{% block content %}
+
+{# --- Date Selection Form --- #}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-calendar-range me-2"></i>Select Date Range for Profit Report</h5>
+    </div>
+    <div class="card-body">
+        {# Form uses GET method to submit dates as URL parameters #}
+        <form method="get" class="row g-3 align-items-end">
+            {{ form|crispy }}
+            <div class="col-12 col-md-auto pt-2">
+                <button type="submit" class="btn btn-sm btn-primary me-2 mb-2">
+                    <i class="bi bi-calculator-fill me-1"></i> Calculate Profit
+                </button>
+                <a href="{% url 'profit-report' %}" class="btn btn-sm btn-secondary mb-2">
+                    <i class="bi bi-x-lg me-1"></i> Clear Dates
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# --- Results Section (Only shown if dates are selected and processed) --- #}
+{% if results_available %}
+<div class="card shadow-sm">
+    <div class="card-header">
+         <h5 class="mb-0">Profit Summary for {{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            {# Revenue Card #}
+            <div class="col-md-4">
+                <div class="card text-bg-success bg-opacity-10 border-success border-opacity-25 h-100">
+                    <div class="card-body text-center">
+                         <h6 class="text-success text-uppercase mb-2">Total Revenue</h6>
+                         <div class="fs-4 fw-bold">Ush {{ total_revenue|floatformat:2| intcomma }}</div>
+                    </div>
+                </div>
+            </div>
+            {# COGS Card #}
+            <div class="col-md-4">
+                <div class="card text-bg-warning bg-opacity-10 border-warning border-opacity-25 h-100">
+                    <div class="card-body text-center">
+                         <h6 class="text-warning text-uppercase mb-2">Total Cost of Goods Sold</h6>
+                         <div class="fs-4 fw-bold">Ush {{ total_cogs|floatformat:2| intcomma}}</div>
+                         <small class="text-muted d-block">(Based on current product cost)</small>
+                    </div>
+                </div>
+            </div>
+            {# Profit Card #}
+            <div class="col-md-4">
+                 <div class="card text-bg-primary bg-opacity-10 border-primary border-opacity-25 h-100">
+                    <div class="card-body text-center">
+                         <h6 class="text-primary text-uppercase mb-2">Estimated Gross Profit</h6>
+                         <div class="fs-4 fw-bold">Ush {{ total_profit|floatformat:2| intcomma }}</div>
+                    </div>
+                </div>
+            </div>
+        </div> {# End Row #}
+
+        {# --- Optional: Detailed Items Table --- #}
+        {# Uncomment this section if you want to display individual items #}
+        {# Consider pagination if this list can be very long #}
+        
+        <hr class="my-4">
+        <h5>Items Contributing to Profit</h5>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Product</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Selling Price</th>
+                        <th class="text-end">Cost Price</th>
+                        <th class="text-end">Line Revenue</th>
+                        <th class="text-end">Line COGS</th>
+                        <th class="text-end">Line Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in items_sold %}
+                    <tr>
+                        <td><a href="{{ data.item.invoice.get_absolute_url }}">{{ data.item.invoice.invoice_number }}</a></td>
+                        <td>{{ data.item.product.name }}</td>
+                        <td class="text-end">{{ data.item.quantity }}</td>
+                        <td class="text-end">Ush {{ data.item.unit_price|floatformat:2| intcomma }}</td>
+                        <td class="text-end">Ush {{ data.item.product.unit_price|floatformat:2| intcomma }}</td>
+                        <td class="text-end">Ush {{ data.line_revenue|floatformat:2| intcomma }}</td>
+                        <td class="text-end">Ush {{ data.line_cogs|floatformat:2| intcomma }}</td>
+                        <td class="text-end {% if data.line_profit < 0 %}text-danger{% endif %}">
+                            ${{ data.line_profit|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted fst-italic p-3">
+                            No sales items found in the selected date range.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                 <tfoot>
+                    <tr class="fw-bold table-light">
+                        <td colspan="5" class="text-end">Totals:</td>
+                        <td class="text-end">Ush {{ total_revenue|floatformat:2| intcomma }}</td>
+                        <td class="text-end">Ush {{ total_cogs|floatformat:2| intcomma }}</td>
+                        <td class="text-end">Ush {{ total_profit|floatformat:2| intcomma }}</td>
+                    </tr>
+                 </tfoot>
+            </table>
+        </div>
+        
+        {# --- End Optional Table --- #}
+
+    </div> {# End card-body #}
+</div> {# End results card #}
+{% endif %} {# End results_available check #}
+
+
+{% endblock %}

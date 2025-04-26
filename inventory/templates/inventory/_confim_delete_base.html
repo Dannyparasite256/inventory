@@ -1,0 +1,27 @@
+{# inventory/templates/inventory/_confirm_delete_base.html #}
+{% extends "inventory/base.html" %}
+
+{% block content %}
+<div class="card shadow-sm border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0">Confirm Deletion</h4>
+    </div>
+    <div class="card-body">
+        <p class="lead">Are you sure you want to delete the {{ object_type|default:"item" }} named <strong>"{{ object }}"</strong>?</p>
+
+        {% block extra_warning %}
+        {# Add specific warnings in child templates if needed #}
+        {# Example: <p class="text-danger fw-bold">Warning: Deleting this will also...</p> #}
+        {% endblock %}
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash-fill me-1"></i> Yes, Delete</button>
+            <a href="{% block cancel_url %}{{ request.META.HTTP_REFERER|escape }}{% endblock %}" class="btn btn-secondary"><i class="bi bi-x-circle-fill me-1"></i> Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+
+

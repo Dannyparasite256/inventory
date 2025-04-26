@@ -1,0 +1,96 @@
+{# inventory/templates/inventory/product_detail.html #}
+{% extends "inventory/base.html" %}
+
+{% load humanize %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block page_actions %}
+ {% if user.is_staff %}
+ <a href="{% url 'product-edit' product.pk %}" class="btn btn-warning me-2"><i class="bi bi-pencil-fill me-1"></i> Edit</a>
+ <a href="{% url 'product-delete' product.pk %}" class="btn btn-danger"><i class="bi bi-trash-fill me-1"></i> Delete</a>
+ {% endif %}
+{% endblock %}
+
+
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h4 class="mb-0">Product Details</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ product.name }}</p>
+                <p><strong>SKU:</strong> {{ product.sku|default:"N/A" }}</p>
+                <p><strong>Category:</strong> {{ product.category.name|default:"N/A" }}</p>
+                <p><strong>Supplier:</strong> {{ product.supplier.name|default:"N/A" }}</p>
+                <p><strong>Description:</strong> {{ product.description|default:"N/A"|linebreaksbr }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Current Quantity:</strong>
+                    <span class="fw-bold fs-5 {% if product.is_below_reorder_level %}text-danger{% else %}text-success{% endif %}">
+                        {{ product.quantity }}
+                    </span>
+                    {% if product.is_below_reorder_level %}
+                         <span class="badge bg-danger ms-2">Low Stock</span>
+                    {% endif %}
+                 </p>
+                <p><strong>Reorder Level:</strong> {{ product.reorder_level }}</p>
+                <p><strong>Unit Cost Price:</strong> Ush {{ product.unit_price|floatformat:2| intcomma }}</p>
+                <p><strong>Selling Price:</strong> Ush {{ product.selling_price|floatformat:2| intcomma }}</p>
+                <p><strong>Created:</strong> {{ product.created_at|date:"Y-m-d H:i" }}</p>
+                <p><strong>Last Updated:</strong> {{ product.updated_at|date:"Y-m-d H:i" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+         <h5 class="mb-0">Recent Transactions</h5>
+    </div>
+    <div class="card-body">
+        {% if transactions %}
+         <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>User</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr>
+                        <td>{{ tx.timestamp|date:"Y-m-d H:i" }}</td>
+                        <td>
+                             <span class="badge {% if tx.transaction_type == 'IN' %}bg-success{% elif tx.transaction_type == 'OUT' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                 {{ tx.get_transaction_type_display }}
+                             </span>
+                        </td>
+                        <td>{{ tx.quantity }}</td>
+                        <td>{{ tx.user.username|default:"System" }}</td>
+                        <td>{{ tx.notes|default:"" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="text-center mt-2">
+                 <a href="{% url 'transaction-list' %}?product={{ product.pk }}" class="btn btn-sm btn-outline-secondary">View All Transactions for this Product</a>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No transactions found for this product.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-4">
+     <a href="{% url 'product-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Products</a>
+</div>
+
+{% endblock %}

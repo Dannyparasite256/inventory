@@ -1,0 +1,30 @@
+{# templates/registration/register.html #}
+{% extends "inventory/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Register Account{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+             <div class="card-header">
+                 <h4 class="mb-0">Create New Account</h4>
+             </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-grid gap-2 mt-4">
+                         <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </form>
+                 <hr>
+                 <p class="text-center mb-0">
+                    Already have an account? <a href="{% url 'login' %}">Login here</a>.
+                 </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

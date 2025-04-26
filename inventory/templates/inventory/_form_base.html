@@ -1,0 +1,174 @@
+{# inventory/templates/inventory/_form_base.html - Reusable base for forms, potentially with inline formsets #}
+{% extends "inventory/base.html" %} {# Extends the main site layout #}
+{% load crispy_forms_tags %} {# Loads tags for the |crispy filter #}
+
+{% block title %}{% block form_title %}Form{% endblock %}{% endblock %} {# Default title, override in child template #}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12"> {# Adjust width as needed, wider for formsets #}
+        <div class="card shadow-sm">
+            <div class="card-header">
+                {# Title inside the card, can be overridden #}
+                <h4 class="mb-0">{% block form_card_title %}{% block form_title_inner %}Form Details{% endblock %}{% endblock %}</h4>
+            </div>
+            <div class="card-body">
+                {# Start the main form #}
+                <form method="post" novalidate>
+                    {% csrf_token %} {# Security token #}
+
+                    {# Render the main form object passed from the view #}
+                    {% if form %}
+                        {{ form|crispy }}
+                    {% endif %}
+
+                    {# --- Inline Formset Section (Conditionally Rendered) --- #}
+                    {% if items_formset %}
+                        <hr class="my-4">
+                        {# Title for the formset section #}
+                        <h4 class="mb-3">{% block formset_title %}Items{% endblock %}</h4>
+
+                        {# Hidden management form required by Django formsets #}
+                        {{ items_formset.management_form|crispy }}
+
+                        {# Container for the individual item forms #}
+                        <div id="item-formset-container">
+                             {% for formset_item in items_formset %}
+                             {# Wrap each formset item for styling and JS targeting #}
+                             {# Add 'd-none' to hide the template form if it's truly empty #}
+                             <div class="item-form mb-3 p-3 border rounded {% if formset_item.prefix == items_formset.empty_form.prefix and not formset_item.has_changed %}d-none{% endif %}" id="{{ formset_item.prefix }}-row">
+                                 {# Render hidden ID field if it exists #}
+                                 {% if formset_item.instance.pk %}{{ formset_item.id }}{% endif %}
+
+                                 {# Use a row for better alignment of fields and delete checkbox #}
+                                 <div class="row g-2 align-items-start">
+                                     {# Render visible fields within columns #}
+                                     {% for field in formset_item.visible_fields %}
+                                         {# Exclude the DELETE field here, render it separately #}
+                                         {% if field.name != 'DELETE' %}
+                                         <div class="col-md"> {# Adjust col size as needed #}
+                                             {{ field|as_crispy_field }}
+                                         </div>
+                                         {% endif %}
+                                     {% endfor %}
+
+                                     {# Render the DELETE checkbox if deletion is allowed #}
+                                     {% if items_formset.can_delete and formset_item.instance.pk %} {# Only show delete for existing, saved items #}
+                                     <div class="col-md-auto pt-4 mt-2"> {# Align checkbox with bottom of fields #}
+                                          {{ formset_item.DELETE|as_crispy_field }}
+                                     </div>
+                                     {% endif %}
+                                 </div> {# End row #}
+                             </div> {# End item-form div #}
+                             {% endfor %}
+                        </div> {# End item-formset-container #}
+
+                        {# --- Template for adding new forms via JavaScript --- #}
+                        {# This is hidden and used as a blueprint #}
+                         <div id="empty-form-template" class="d-none">
+                             <div class="item-form mb-3 p-3 border rounded" id="{{ items_formset.empty_form.prefix }}-row">
+                                 {# Hidden ID would be blank here #}
+                                 <div class="row g-2 align-items-start">
+                                     {% for field in items_formset.empty_form.visible_fields %}
+                                         {% if field.name != 'DELETE' %}
+                                         <div class="col-md">
+                                              {# Render empty form fields using crispy for consistency #}
+                                              {{ field|as_crispy_field }}
+                                         </div>
+                                         {% endif %}
+                                     {% endfor %}
+                                     {# The delete checkbox for new (empty) forms isn't typically useful until saved #}
+                                     {# {% if items_formset.can_delete %} #}
+                                     {# <div class="col-md-auto pt-4 mt-2"> #}
+                                     {#    {{ items_formset.empty_form.DELETE|as_crispy_field }} #}
+                                     {# </div> #}
+                                     {# {% endif %} #}
+                                 </div> {# End row #}
+                             </div> {# End item-form div #}
+                         </div> {# End empty-form-template #}
+
+                         {# Button to trigger adding a new formset item #}
+                         <button type="button" id="add-item-button" class="btn btn-sm btn-outline-success mb-3">
+                            <i class="bi bi-plus-lg me-1"></i> Add {% block add_button_label %}Item{% endblock %}
+                        </button>
+                    {% endif %}
+                    {# --- End Inline Formset Section --- #}
+
+                    {# --- Main Form Action Buttons --- #}
+                    <div class="mt-4 pt-3 border-top d-grid gap-2 d-sm-flex justify-content-sm-end">
+                        <a href="{% block cancel_url %}{% url 'dashboard' %}{% endblock %}" class="btn btn-outline-secondary order-sm-1 me-sm-2">
+                            <i class="bi bi-x-circle me-1"></i> Cancel
+                        </a>
+                         <button type="submit" class="btn btn-success order-sm-2">
+                             <i class="bi bi-check-circle-fill me-1"></i> {% block save_button_label %}Save{% endblock %}
+                        </button>
+                    </div>
+                </form> {# End the main form #}
+            </div> {# End card-body #}
+        </div> {# End card #}
+    </div> {# End col #}
+</div> {# End row #}
+
+{# --- JavaScript Section (for Formsets) --- #}
+{% block extra_scripts %}
+    {{ block.super }} {# Include scripts from base.html if any #}
+    {% if items_formset %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const formsetContainer = document.getElementById('item-formset-container');
+            const addButton = document.getElementById('add-item-button');
+            const emptyFormTemplate = document.getElementById('empty-form-template').innerHTML;
+            const totalFormsInput = document.querySelector('input[name="{{ items_formset.prefix }}-TOTAL_FORMS"]');
+            const formsetPrefix = '{{ items_formset.prefix }}';
+            // Correctly get the initial number of forms already rendered (excluding the template form)
+            let formNum = {{ items_formset.initial_form_count }}; // Use initial_form_count for existing forms
+            // Start the count for *new* forms from the total forms rendered by Django (includes extra forms)
+            let nextFormNum = {{ items_formset.total_form_count }};
+
+            // Function to add a new form
+            function addForm() {
+                // Replace the prefix placeholder in the template with the next form number
+                const newFormHtml = emptyFormTemplate.replace(/__prefix__/g, nextFormNum);
+                const newDiv = document.createElement('div');
+                newDiv.innerHTML = newFormHtml;
+                // Append the actual form div (first child of the temporary div)
+                formsetContainer.appendChild(newDiv.firstElementChild);
+
+                // Increment the total forms count in the management form
+                totalFormsInput.value = parseInt(totalFormsInput.value) + 1;
+                nextFormNum++; // Increment the index for the *next* form to be added
+            }
+
+            // Add event listener to the button
+            if (addButton) {
+                addButton.addEventListener('click', addForm);
+            }
+
+             // Optional: Add event listener for delete checkboxes to visually indicate deletion
+             formsetContainer.addEventListener('change', function(event) {
+                // Check if the changed element is an input, is a checkbox, and its name ends with '-DELETE'
+                if (event.target.matches('input[type="checkbox"][name$="-DELETE"]')) {
+                    const formRow = event.target.closest('.item-form'); // Find the parent form row div
+                    if (formRow) {
+                        if (event.target.checked) {
+                            // Apply styles to indicate it's marked for deletion
+                            formRow.style.opacity = '0.5';
+                            formRow.style.backgroundColor = '#f8d7da'; // Light danger background
+                            // Optionally disable other input fields within this row
+                            formRow.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => el.disabled = true);
+                        } else {
+                            // Remove deletion indication styles
+                            formRow.style.opacity = '1';
+                            formRow.style.backgroundColor = ''; // Reset background
+                            // Re-enable input fields
+                             formRow.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => el.disabled = false);
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+    {% endif %}
+{% endblock %}
+
+{% endblock %}

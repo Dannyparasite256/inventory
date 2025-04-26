@@ -1,0 +1,18 @@
+
+{% extends "inventory/_confirm_delete_base.html" %}
+
+{% block title %}Confirm Delete Product{% endblock %}
+
+{% block extra_warning %}
+    <p class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>This action cannot be undone. Associated transaction history will remain but the product link may be lost if not handled carefully.</p>
+{% endblock %}
+
+{% block cancel_url %}{% url 'product-detail' object.pk %}{% endblock %} {# Go back to detail view #}
+
+{% block extra_context %}
+    {% with object_type="Product" %}
+        {{ block.super }}
+    {% endwith %}
+{% endblock %}
+
+

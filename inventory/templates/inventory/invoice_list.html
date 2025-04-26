@@ -1,0 +1,112 @@
+{# inventory/templates/inventory/invoice_list.html #}
+{% extends "inventory/base.html" %} {# Extends the base layout #}
+{% load humanize %}
+{% load crispy_forms_tags %} {# Loads tags required for |crispy filter #}
+
+{% block title %}All Sales Invoices{% endblock %}
+
+{% block page_actions %}
+ {# Show 'Add New' button only to staff members #}
+ {% if user.is_staff %}
+ <a href="{% url 'invoice-add' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle-fill me-1"></i> Add New Invoice
+</a>
+ {% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# --- Filter Form Section --- #}
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        {# Use GET method for filtering, action defaults to current URL #}
+        <form method="get" class="row g-3 align-items-center">
+            {# Render the filter form using crispy tags #}
+            {{ filter_form|crispy }}
+
+            {# Action buttons for the filter form #}
+            <div class="col-12 col-md-auto pt-md-3"> {# Adjust column for button alignment #}
+                <button type="submit" class="btn btn-sm btn-info me-2 mb-2">
+                    <i class="bi bi-search me-1"></i> Filter Invoices
+                </button>
+                 {# Link to clear filters by going to the same URL without query params #}
+                 <a href="{% url 'invoice-list' %}" class="btn btn-sm btn-secondary mb-2">
+                    <i class="bi bi-x-lg me-1"></i> Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# --- Invoice Table Section --- #}
+<div class="card shadow-sm">
+    <div class="card-header">
+        {# Indicate if the current view is filtered #}
+        <h5 class="mb-0">Invoice Listing {% if request.GET %} <span class="badge bg-secondary fw-normal">Filtered</span>{% endif %}</h5>
+    </div>
+    <div class="card-body p-0"> {# Remove padding for table alignment #}
+        <div class="table-responsive">
+            {# Use table-sm for a denser table #}
+            <table class="table table-striped table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Invoice #</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Sale Date</th>
+                        <th scope="col">Due Date</th>
+                        <th scope="col" class="text-end">Total Amount</th>
+                        <th scope="col" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# Loop through 'invoices' (context_object_name from InvoiceListView) #}
+                    {% for invoice in invoices %}
+                        <tr class="align-middle">
+                            {# Link invoice number to its detail page #}
+                            <td><a href="{{ invoice.get_absolute_url }}">{{ invoice.invoice_number }}</a></td>
+                            <td>{{ invoice.customer_name|default:"N/A" }}</td>
+                            <td>{{ invoice.sale_date|date:"Y-m-d" }}</td>
+                            <td>{{ invoice.due_date|date:"Y-m-d"|default:"-" }}</td>
+                            <td class="text-end fw-bold">Ush {{ invoice.total_amount|floatformat:2| intcomma }}</td>
+                            <td class="text-center">
+                                {# Action buttons - View is always visible #}
+                                <a href="{{ invoice.get_absolute_url }}" class="btn btn-sm btn-outline-info me-1" title="View Invoice">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
+                                {# Edit and Delete only for staff #}
+                                {% if user.is_staff %}
+                                <a href="{% url 'invoice-edit' invoice.pk %}" class="btn btn-sm btn-outline-warning me-1" title="Edit Invoice">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                                <a href="{% url 'invoice-delete' invoice.pk %}" class="btn btn-sm btn-outline-danger" title="Delete Invoice">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        {# Message shown if no invoices match the filter or exist #}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted p-4">
+                                {# Adapt message based on whether filters were applied #}
+                                {% if request.GET %}
+                                    No invoices found matching your filter criteria. <a href="{% url 'invoice-list' %}">Clear filters?</a>
+                                {% else %}
+                                    No invoices have been created yet. {% if user.is_staff %}<a href="{% url 'invoice-add' %}">Create one?</a>{% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div> {# End table-responsive #}
+    </div> {# End card-body #}
+</div> {# End Card #}
+
+{# --- Pagination Section --- #}
+{# Include pagination controls if pagination is enabled #}
+{% if is_paginated %}
+    {% include "inventory/_pagination.html" %}
+{% endif %}
+
+{% endblock %}

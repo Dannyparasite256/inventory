@@ -1,0 +1,154 @@
+{% extends "inventory/base.html" %}
+
+{% load humanize %}
+
+{% block title %}Report: {{ start_date|date:"Y-m-d" }} to {{ end_date|date:"Y-m-d" }}{% endblock %}
+
+{% block page_actions %}
+ <a href="{% url 'report-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Report Selection</a>
+ <button onclick="window.print()" class="btn btn-info"><i class="bi bi-printer-fill me-1"></i> Print Report</button>
+{% endblock %}
+
+{% block content %}
+
+<p class="lead mb-4">Report generated for the period: <strong>{{ start_date|date:"F j, Y" }}</strong> to <strong>{{ end_date|date:"F j, Y" }}</strong></p>
+
+<!-- Sales and Purchase Summary -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Sales Summary</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Invoices:</strong> {{ sales_summary.invoice_count|default:0 }}</p>
+                <p><strong>Subtotal:</strong> Ush {{ sales_summary.total_sub_total|default:"0.00"|floatformat:2 | intcomma }}</p>
+                <p><strong>Total Discounts:</strong> Ush {{ sales_summary.total_discount|default:"0.00"|floatformat:2| intcomma }}</p>
+                <p><strong>Total Tax:</strong> Ush {{ sales_summary.total_tax|default:"0.00"|floatformat:2| intcomma }}</p>
+                <p class="fw-bold"><strong>Total Sales Revenue:</strong> Ush {{ sales_summary.total_sales|default:"0.00"|floatformat:2 | intcomma}}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+         <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Purchase Summary</h5>
+            </div>
+            <div class="card-body">
+                 <p><strong>Total Receipts:</strong> {{ purchase_summary.receipt_count|default:0 }}</p>
+                 <p class="fw-bold"><strong>Total Purchase Cost:</strong> Ush {{ purchase_summary.total_purchases|default:"0.00"|floatformat:2| intcomma }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Movement -->
+<div class="card shadow-sm mb-4">
+     <div class="card-header">
+         <h5 class="mb-0">Inventory Movement (Transactions)</h5>
+    </div>
+    <div class="card-body">
+        {% if transactions %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Product</th>
+                        <th>Type</th>
+                        <th class="text-end">Quantity</th>
+                        <th>User</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr>
+                        <td>{{ tx.timestamp|date:"Y-m-d H:i" }}</td>
+                        <td>{{ tx.product.name }} {% if tx.product.sku %}({{tx.product.sku}}){% endif %}</td>
+                         <td>
+                             <span class="badge {% if tx.transaction_type == 'IN' %}bg-success{% elif tx.transaction_type == 'OUT' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                 {{ tx.get_transaction_type_display }}
+                             </span>
+                        </td>
+                        <td class="text-end">{{ tx.quantity }}</td>
+                        <td>{{ tx.user.username|default:"System" }}</td>
+                        <td>{{ tx.notes|default:""|truncatechars:50 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+         {% else %}
+        <p class="text-muted">No inventory transactions found in this period.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Top Selling Products -->
+<div class="card shadow-sm mb-4">
+     <div class="card-header">
+         <h5 class="mb-0">Top Selling Products (by Quantity)</h5>
+    </div>
+    <div class="card-body">
+        {% if top_selling_products %}
+         <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-end">Total Quantity Sold</th>
+                        <th class="text-end">Total Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in top_selling_products %}
+                    <tr>
+                        <td>{{ product.product__name }}</td>
+                        <td class="text-end">{{ product.total_quantity_sold }}</td>
+                        <td class="text-end">Ush {{ product.total_revenue|floatformat:2| intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+         </div>
+        {% else %}
+        <p class="text-muted">No sales data found for products in this period.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Low Stock Report -->
+<div class="card shadow-sm mb-4">
+     <div class="card-header bg-warning">
+         <h5 class="mb-0">Current Low Stock Items (Below Reorder Level)</h5>
+    </div>
+    <div class="card-body">
+        {% if low_stock_products %}
+         <div class="table-responsive">
+            <table class="table table-sm table-danger">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-end">Current Quantity</th>
+                        <th class="text-end">Reorder Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in low_stock_products %}
+                    <tr>
+                         <td><a href="{{ product.get_absolute_url }}">{{ product.name }}</a> {% if product.sku %}({{product.sku}}){% endif %}</td>
+                        <td class="text-end fw-bold">{{ product.quantity }}</td>
+                        <td class="text-end">{{ product.reorder_level }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+         </div>
+         {% else %}
+        <p class="text-muted">No products are currently below their reorder level.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

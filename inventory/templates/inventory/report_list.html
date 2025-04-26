@@ -1,0 +1,37 @@
+{# inventory/templates/inventory/report_list.html #}
+{% extends "inventory/base.html" %} {# Extends the base layout #}
+{% load crispy_forms_tags %} {# Loads tags required for |crispy filter #}
+
+{% block title %}Generate Inventory Report{% endblock %}
+
+{% load humanize %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10"> {# Controls the width of the form card #}
+         <div class="card shadow-sm">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-calendar-range me-2"></i>Select Report Parameters</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Choose a date range to generate the inventory, sales, and purchase summary report.</p>
+
+                {# Start of the form - posts back to the 'report-list' view #}
+                <form method="post" action="{% url 'report-list' %}" novalidate>
+                    {% csrf_token %} {# Security token #}
+
+                    {# Render the date range form using crispy #}
+                    {{ form|crispy }}
+
+                    {# Submit button #}
+                    <div class="mt-4 pt-3 border-top text-end"> {# Align button to the right #}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-bar-chart-line-fill me-1"></i> Generate Report
+                        </button>
+                    </div>
+                </form> {# End of the form #}
+            </div> {# End card-body #}
+        </div> {# End card #}
+    </div> {# End col #}
+</div> {# End row #}
+{% endblock %}

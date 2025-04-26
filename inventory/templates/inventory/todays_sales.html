@@ -1,0 +1,90 @@
+{# inventory/templates/inventory/todays_sales.html #}
+{% extends "inventory/base.html" %}
+
+{% load humanize %}
+
+{% block title %}Sales for Today - {{ today_date|date:"F j, Y" }}{% endblock %}
+
+{% block page_actions %}
+ {# Prominent button to add a new invoice for today #}
+ {% if user.is_staff %}
+ <a href="{% url 'invoice-add' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle-fill me-1"></i> Record New Sale (Invoice)
+</a>
+ {% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# --- Summary for Today --- #}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card text-bg-light shadow-sm h-100">
+             <div class="card-body">
+                 <h5 class="card-title">Today's Sales Summary</h5>
+                 <p class="card-text">
+                     <strong>Total Invoices Recorded:</strong> {{ invoice_count_today }} <br>
+                     <strong class="fs-5">Total Sales Amount:</strong> <span class="fs-4 fw-bold">Ush {{ total_sales_today|floatformat:2| intcomma }}</span>
+                 </p>
+                 {# Link to the PDF report for today #}
+                 <a href="{% url 'daily-sales-report-pdf' date_str=today_date|date:'Y-m-d' %}" target="_blank" class="btn btn-sm btn-success">
+                     <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Today's Summary PDF
+                 </a>
+             </div>
+        </div>
+    </div>
+    <div class="col-md-6 d-flex align-items-center">
+         <div class="alert alert-info w-100" role="alert">
+           <i class="bi bi-info-circle-fill me-2"></i>
+           This page shows sales recorded with today's date ({{ today_date|date:"Y-m-d" }}). To view or generate reports for other dates, use the 'All Sales Invoices' list or the 'Daily Sales Report' generator from the sidebar.
+         </div>
+    </div>
+</div>
+
+
+{# --- Table of Today's Invoices --- #}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Invoices Recorded Today ({{ today_date|date:"Y-m-d" }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Time Recorded</th> {# Show time for today's view #}
+                        <th>Customer</th>
+                        <th class="text-end">Total Amount</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in todays_invoices %}
+                        <tr class="align-middle">
+                            <td><a href="{{ invoice.get_absolute_url }}">{{ invoice.invoice_number }}</a></td>
+                            <td>{{ invoice.created_at|date:"H:i:s" }}</td> {# Show time #}
+                            <td>{{ invoice.customer_name|default:"N/A" }}</td>
+                            <td class="text-end fw-bold">Ush {{ invoice.total_amount|floatformat:2 | intcomma}}</td>
+                            <td class="text-center">
+                                <a href="{{ invoice.get_absolute_url }}" class="btn btn-sm btn-outline-info me-1" title="View Details"><i class="bi bi-eye-fill"></i></a>
+                                {% if user.is_staff %}
+                                <a href="{% url 'invoice-edit' invoice.pk %}" class="btn btn-sm btn-outline-warning me-1" title="Edit Invoice"><i class="bi bi-pencil-fill"></i></a>
+                                <a href="{% url 'invoice-delete' invoice.pk %}" class="btn btn-sm btn-outline-danger" title="Delete Invoice"><i class="bi bi-trash-fill"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted p-4">
+                                No sales have been recorded for today yet. {% if user.is_staff %}<a href="{% url 'invoice-add' %}">Record one?</a>{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

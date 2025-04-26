@@ -1,0 +1,41 @@
+{# inventory/templates/inventory/product_form.html #}
+{% extends "inventory/base.html" %} {# Extends the base layout #}
+{% load crispy_forms_tags %} {# Loads tags required for |crispy filter #}
+
+{# Set the page title dynamically based on whether editing or adding #}
+{% block title %}{% if object %}Update Product: {{ object.name }}{% else %}Add New Product{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9 col-md-11"> {# Controls the width of the form card #}
+        <div class="card shadow-sm">
+            <div class="card-header">
+                {# Dynamic card title #}
+                <h4 class="mb-0">{% if object %}Update Product Details{% else %}Enter New Product Details{% endif %}</h4>
+            </div>
+            <div class="card-body">
+                {# Start of the form #}
+                <form method="post" novalidate> {# Use POST; novalidate prevents default browser validation #}
+                    {% csrf_token %} {# Crucial for security against CSRF attacks #}
+
+                    {# Render the form fields using the |crispy filter #}
+                    {# This automatically applies Bootstrap styling based on settings.py #}
+                    {{ form|crispy }}
+
+                    {# --- Form Action Buttons --- #}
+                    <div class="mt-4 pt-3 border-top d-grid gap-2 d-sm-flex justify-content-sm-end">
+                        {# Cancel Button: Links to detail view if editing, list view if adding #}
+                        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'product-list' %}{% endif %}" class="btn btn-outline-secondary order-sm-1 me-sm-2">
+                            <i class="bi bi-x-circle me-1"></i> Cancel
+                        </a>
+                        {# Submit Button: Text changes based on context #}
+                         <button type="submit" class="btn btn-success order-sm-2">
+                             <i class="bi bi-check-circle-fill me-1"></i> {% if object %}Update Product{% else %}Save Product{% endif %}
+                        </button>
+                    </div>
+                </form> {# End of the form #}
+            </div> {# End card-body #}
+        </div> {# End card #}
+    </div> {# End col #}
+</div> {# End row #}
+{% endblock %}

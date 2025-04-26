@@ -1,0 +1,133 @@
+{# inventory/templates/inventory/invoice_detail.html #}
+{% extends "inventory/base.html" %} {# Extends the base layout #}
+
+{% load humanize %}
+
+{% block title %}Invoice Details: {{ invoice.invoice_number }}{% endblock %}
+
+{% block page_actions %}
+    {# Buttons visible in the header area #}
+    {% if user.is_staff %}
+        <a href="{% url 'invoice-edit' invoice.pk %}" class="btn btn-warning me-2"><i class="bi bi-pencil-fill me-1"></i> Edit</a>
+        <a href="{% url 'invoice-delete' invoice.pk %}" class="btn btn-danger me-2"><i class="bi bi-trash-fill me-1"></i> Delete</a>
+    {% endif %}
+    {# ADDED: PDF Download Button #}
+    <a href="{% url 'invoice-pdf' invoice.pk %}" target="_blank" class="btn btn-success me-2"><i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF</a>
+    {# Optional: Simple print functionality using browser's print dialog #}
+    {# <button onclick="window.print()" class="btn btn-info"><i class="bi bi-printer-fill me-1"></i> Print</button> #}
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-4">
+    {# Card Header with Invoice Number #}
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Invoice Details</h4>
+            <span class="badge bg-secondary fs-6">Invoice #: {{ invoice.invoice_number }}</span>
+        </div>
+    </div>
+
+    <div class="card-body">
+        {# --- Invoice Header Information --- #}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Customer:</strong></p>
+                <p class="text-muted">{{ invoice.customer_name|default:"N/A" }}</p>
+
+                <p class="mb-1"><strong>Sale Date:</strong></p>
+                <p class="text-muted">{{ invoice.sale_date|date:"F j, Y" }}</p> {# More readable date format #}
+
+                <p class="mb-1"><strong>Due Date:</strong></p>
+                <p class="text-muted">{{ invoice.due_date|date:"F j, Y"|default:"N/A" }}</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <p class="mb-1"><strong>Created By:</strong></p>
+                <p class="text-muted">{{ invoice.created_by.username|default:"System" }}</p>
+
+                <p class="mb-1"><strong>Created At:</strong></p>
+                <p class="text-muted">{{ invoice.created_at|date:"Y-m-d H:i" }}</p>
+             </div>
+        </div>
+        <hr>
+
+        {# --- Invoice Items Table --- #}
+        <h5 class="mb-3">Items Sold</h5>
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Product</th>
+                        <th scope="col" class="text-end">Quantity</th>
+                        <th scope="col" class="text-end">Unit Price</th>
+                        <th scope="col" class="text-end">Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# Loop through items prefetched in the view for efficiency #}
+                    {% for item in invoice.items.all %}
+                    <tr>
+                        <td>
+                            {{ item.product.name }}
+                            {% if item.product.sku %}
+                                <small class="text-muted d-block">SKU: {{ item.product.sku }}</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">{{ item.quantity }}</td>
+                        <td class="text-end">Ush {{ item.unit_price|floatformat:2 |intcomma }}</td>
+                        {# CORRECTED: Use widthratio tag for multiplication: (item.quantity / 1) * item.unit_price #}
+                        <td class="text-end">Ush {% widthratio item.quantity 1 item.unit_price %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted fst-italic p-3">
+                            No items found on this invoice.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {# --- Invoice Totals Footer --- #}
+                <tfoot>
+                    {# Subtotal #}
+                    <tr>
+                        <td colspan="3" class="text-end border-0">Subtotal:</td>
+                        <td class="text-end border-0">Ush {{ invoice.sub_total|floatformat:2 | intcomma }}</td>
+                    </tr>
+                    {# Discount (only show if applied) #}
+                    {% if invoice.discount_amount > 0 %}
+                    <tr>
+                        <td colspan="3" class="text-end border-0">Discount ({{ invoice.discount_rate|floatformat:2 }}%):</td>
+                        <td class="text-end text-danger border-0">-Ush {{ invoice.discount_amount|floatformat:2| intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    {# Tax (only show if applied) #}
+                     {% if invoice.tax_amount > 0 %}
+                    <tr>
+                        <td colspan="3" class="text-end border-0">Tax ({{ invoice.tax_rate|floatformat:2 }}%):</td>
+                        <td class="text-end border-0">Ush {{ invoice.tax_amount|floatformat:2| intcomma }}</td>
+                    </tr>
+                     {% endif %}
+                    {# Grand Total #}
+                    <tr class="fw-bold table-group-divider"> {# Adds a heavier top border #}
+                        <td colspan="3" class="text-end fs-5 pt-2">Total Amount:</td>
+                        <td class="text-end fs-5 pt-2">Ush {{ invoice.total_amount|floatformat:2 | intcomma}}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        {# --- Notes Section (only show if notes exist) --- #}
+        {% if invoice.notes %}
+            <div class="mt-4">
+                <h5>Notes</h5>
+                <p class="text-muted border p-2 rounded bg-light">{{ invoice.notes|linebreaksbr }}</p>
+            </div>
+        {% endif %}
+
+    </div> {# End card-body #}
+</div> {# End Card #}
+
+{# --- Back Button --- #}
+<div class="mt-4">
+    <a href="{% url 'invoice-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Invoice List</a>
+</div>
+{% endblock %}
